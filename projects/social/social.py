@@ -1,3 +1,5 @@
+import random
+
 class User:
     def __init__(self, name):
         self.name = name
@@ -6,11 +8,17 @@ class SocialGraph:
     def __init__(self):
         self.last_id = 0
         self.users = {}
+
+        # this is your adjacency list representation of a graph
         self.friendships = {}
 
     def add_friendship(self, user_id, friend_id):
         """
         Creates a bi-directional friendship
+
+        Therefore creates an undirected graph
+
+        Makes TWO friendships
         """
         if user_id == friend_id:
             print("WARNING: You cannot be friends with yourself")
@@ -27,6 +35,12 @@ class SocialGraph:
         self.last_id += 1  # automatically increment the ID to assign the new user
         self.users[self.last_id] = User(name)
         self.friendships[self.last_id] = set()
+
+
+    def fisher_yates_shuffle(self, l):
+        for i in range(0, len(l)):
+            random_index = random.randint(i, len(l) - 1)
+            l[random_index], l[i] = l[i], l[random_index]
 
     def populate_graph(self, num_users, avg_friendships):
         """
@@ -45,8 +59,32 @@ class SocialGraph:
         # !!!! IMPLEMENT ME
 
         # Add users
+        for user in range(num_users):
+            self.add_user(user)
+            # starts at 1, up to and including num_users
+
+
+        # * Hint 1: To create N random friendships, 
+        # you could create a list with all possible friendship combinations of user ids, 
+
+        friendship_combinations = []
+        # O(n^2)
+        for user in range(1, self.last_id + 1):
+            for friend in range(user + 1, self.last_id + 1):
+                friendship_combinations.append((user, friend))
+
+        # shuffle the list
+        self.fisher_yates_shuffle(friendship_combinations)
+
+        # then grab the first N elements from the list. 
+        total_friendships = num_users * avg_friendships
+
+        friends_to_make = friendship_combinations[:(total_friendships // 2)]
 
         # Create friendships
+        for friendship in friends_to_make:
+            self.add_friendship(friendship[0], friendship[1])
+
 
     def get_all_social_paths(self, user_id):
         """
