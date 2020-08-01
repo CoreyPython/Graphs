@@ -1,4 +1,5 @@
 import random
+from util import Queue, Stack
 
 class User:
     def __init__(self, name):
@@ -63,40 +64,79 @@ class SocialGraph:
             self.add_user(user)
             # starts at 1, up to and including num_users
 
+            # Create friendships
+            total_friendships = num_users * avg_friendships
+            added_friendships = 0
+
+        while added_friendships < total_friendships:
+            user_id = random.randint(1, self.last_id)
+            friend_id = random.randint(1, self.last_id)
+
+            if user_id != friend_id and friend_id not in self.friendships[user_id]:
+                self.add_friendship(user_id, friend_id)
+                added_friendships += 2
+
 
         # * Hint 1: To create N random friendships, 
         # you could create a list with all possible friendship combinations of user ids, 
 
-        friendship_combinations = []
-        # O(n^2)
-        for user in range(1, self.last_id + 1):
-            for friend in range(user + 1, self.last_id + 1):
-                friendship_combinations.append((user, friend))
-
-        # shuffle the list
-        self.fisher_yates_shuffle(friendship_combinations)
-
-        # then grab the first N elements from the list. 
-        total_friendships = num_users * avg_friendships
-
-        friends_to_make = friendship_combinations[:(total_friendships // 2)]
-
-        # Create friendships
-        for friendship in friends_to_make:
-            self.add_friendship(friendship[0], friendship[1])
-
+        # friendship_combinations = []
+        # # O(n^2)
+        # for user in range(1, self.last_id + 1):
+        #     for friend in range(user + 1, self.last_id + 1):
+        #         friendship_combinations.append((user, friend))
+        #
+        # # shuffle the list
+        # self.fisher_yates_shuffle(friendship_combinations)
+        #
+        # # then grab the first N elements from the list.
+        # total_friendships = num_users * avg_friendships
+        #
+        # friends_to_make = friendship_combinations[:(total_friendships // 2)]
+        #
+        # # Create friendships
+        # for friendship in friends_to_make:
+        #     self.add_friendship(friendship[0], friendship[1])
 
     def get_all_social_paths(self, user_id):
         """
         Takes a user's user_id as an argument
-
         Returns a dictionary containing every user in that user's
         extended network with the shortest friendship path between them.
-
         The key is the friend's ID and the value is the path.
         """
         visited = {}  # Note that this is a dictionary, not a set
         # !!!! IMPLEMENT ME
+        queue = Queue()
+        queue.enqueue([user_id])
+
+        while queue.size() > 0:
+            path = queue.dequeue()
+            friend_id = path[-1]
+
+            if friend_id in visited:
+                continue
+
+            visited[friend_id] = path
+
+            for cur_id in self.friendships[friend_id]:
+                new_path = path.copy()
+                new_path.append(cur_id)
+                queue.enqueue(new_path)
+
+        friend_coverage = (len(visited) - 1) / (len(self.users) - 1)
+        print(f"Percentage of users that are in extended network: {friend_coverage * 100: 0.1f}%")
+
+        total_length = 0
+        for path in visited.values():
+            total_length += len(path) - 1
+
+        if len(visited) > 1:
+            avg_separation = total_length / (len(visited) - 1)
+            print(f"Average degree of separation: {avg_separation}")
+        else:
+            print("No friends")
+
         return visited
 
 
