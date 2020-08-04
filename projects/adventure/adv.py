@@ -4,12 +4,78 @@ from ast import literal_eval
 from room import Room
 from player import Player
 from world import World
+from util import Queue, Stack
 
-import scratch
+"""
+500 Rooms(Nodes)
+Connections or passages between the room are the edges.
+traversal_path = directions to traverse each room.
+Visit each room once.
+Need to have reverse directions
+
+"""
+
+
+# This is the start.
+import random
+from ast import literal_eval
+from util import Queue
+
+
+def add_room(room):
+    """
+    Adds a room and gets the exits for the current room.
+    Gives the room a blank_room starting coordinates.
+    """
+    if room not in room_map:
+        room_map[room] = {'n': '?', 's': '?', 'e': '?', 'w': '?'}
+        exits = room.get_exits()
+        for direction in room_map[room]:
+            if direction not in exits:
+                room_map[room][direction] = 'None'
+        return True
+    else:
+        return False
+
+
+def add_relation(starting_room, direction, ending_room):
+    """
+    Creates a hallway connection between the 2 rooms.
+    """
+    room_map[starting_room][direction] = ending_room
+    room_map[ending_room][inverse[direction]] = starting_room
+
+
+def get_path(starting_room):
+    """
+    Keeps track of our trail.
+    """
+    visited = set()
+    q = Queue()
+    q.enqueue((starting_room, []))
+
+    while q.size() > 0:
+        room, path = q.dequeue()
+        if room in visited:
+            continue
+        else:
+            visited.add(room)
+        for exit in room_map[room]:
+            if room_map[room][exit] == '?':
+                return path
+            elif room_map[room][exit] != 'None':
+                new_path = path.copy()
+                new_path.append(exit)
+                new_room = room_map[room][exit]
+                q.enqueue((new_room, new_path))
+    return []
+
+
+# This is the end.
+
 
 # Load world
 world = World()
-
 
 # You may uncomment the smaller graphs for development and testing purposes.
 # map_file = "maps/test_line.txt"
@@ -19,22 +85,51 @@ world = World()
 map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
-room_graph=literal_eval(open(map_file, "r").read())
+room_graph = literal_eval(open(map_file, "r").read())
 world.load_graph(room_graph)
 
 # Print an ASCII map
-world.print_rooms()
+# world.print_rooms()
 
 player = Player(world.starting_room)
 
 # Fill this out with directions to walk
+# traversal_path = ['n', 'n']
 traversal_path = []
-scratch.explore(player, traversal_path)
 
-# This is the START of the test
+# START
 
+turn_right = {'n': 'e', 'e': 's', 's': 'w', 'w': 'n'}
+inverse = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
+room_map = {}
+add_room(player.current_room)
 
+while len(room_map) < len(room_graph):
+    room = player.current_room
+    exits = room.get_exits()
+    explored = False
+    direction = 's'
 
+    for _ in range(len(turn_right)):
+        if room_map[room][direction] == '?' and direction in exits:
+            explored = True
+            player.travel(direction)
+            next_room = player.current_room
+            traversal_path.append(direction)
+            if not add_room(next_room):
+                player.travel(inverse[direction])
+                traversal_path.pop()
+            add_relation(room, direction, next_room)
+            break
+        else:
+            direction = turn_right[direction]
+    if not explored:
+        path = get_path(room)
+        traversal_path.extend(path)
+        for direction in path:
+            player.travel(direction)
+
+# This is the END
 
 
 # TRAVERSAL TEST
@@ -51,10 +146,6 @@ if len(visited_rooms) == len(room_graph):
 else:
     print("TESTS FAILED: INCOMPLETE TRAVERSAL")
     print(f"{len(room_graph) - len(visited_rooms)} unvisited rooms")
-
-
-
-
 
 #######
 # UNCOMMENT TO WALK AROUND
